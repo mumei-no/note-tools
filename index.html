@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <title>note投稿カレンダー（紙の手帳風）</title>
+  <title>note投稿カレンダー</title>
 
   <!-- TUI Calendar -->
   <link rel="stylesheet" href="https://uicdn.toast.com/calendar/latest/toastui-calendar.min.css" />
@@ -12,7 +12,6 @@
       --bg: #faf7f2;
       --paper: #ffffff;
       --text: #333;
-      --line: #e0dcd3;
       --accent: #6b4f3f;
     }
 
@@ -20,7 +19,6 @@
       --bg: #1e1e1e;
       --paper: #2a2a2a;
       --text: #eaeaea;
-      --line: #444;
       --accent: #c8a97e;
     }
 
@@ -36,7 +34,7 @@
       justify-content: space-between;
       align-items: center;
       padding: 12px 16px;
-      border-bottom: 1px solid var(--line);
+      border-bottom: 1px solid #ddd;
       background: var(--paper);
     }
 
@@ -56,33 +54,14 @@
       font-size: 14px;
       cursor: pointer;
       background: var(--paper);
-      border: 1px solid var(--line);
+      border: 1px solid #ccc;
       color: var(--text);
       border-radius: 4px;
-    }
-
-    button:hover {
-      background: rgba(0,0,0,0.05);
     }
 
     #calendar {
       height: calc(100vh - 60px);
       background: var(--paper);
-    }
-
-    /* 紙っぽさ */
-    .toastui-calendar-layout {
-      background-image: repeating-linear-gradient(
-        to bottom,
-        transparent,
-        transparent 28px,
-        var(--line) 29px
-      );
-    }
-
-    .toastui-calendar-day-name {
-      font-weight: normal;
-      color: var(--accent);
     }
 
     .toastui-calendar-event-title {
@@ -116,6 +95,11 @@
       isReadOnly: true,
       month: {
         startDayOfWeek: 0
+      },
+      template: {
+        time(event) {
+          return `${event.startTime} ${event.title}`;
+        }
       }
     });
 
@@ -129,7 +113,7 @@
       document.body.classList.toggle('dark');
     };
 
-    // イベントクリック → note記事を開く
+    // イベントクリック
     calendar.on('clickEvent', ({ event }) => {
       if (event.url) {
         window.open(event.url, '_blank', 'noopener');
@@ -146,18 +130,22 @@
         const events = data.items.map(item => {
           const date = new Date(item.pubDate);
 
+          // ローカル時間をそのまま使う
           const y = date.getFullYear();
           const m = String(date.getMonth() + 1).padStart(2, '0');
           const d = String(date.getDate()).padStart(2, '0');
+          const hh = String(date.getHours()).padStart(2, '0');
+          const mm = String(date.getMinutes()).padStart(2, '0');
 
           return {
             id: item.guid,
             calendarId: 'note',
             title: item.title,
-            category: 'allday',
-            start: `${y}-${m}-${d}`,
-            end: `${y}-${m}-${d}`,
-            url: item.link, // ← ここがポイント
+            category: 'time',
+            start: `${y}-${m}-${d}T${hh}:${mm}`,
+            end: `${y}-${m}-${d}T${hh}:${mm}`,
+            startTime: `${hh}:${mm}`,
+            url: item.link,
             backgroundColor: '#6b4f3f',
             color: '#fff'
           };
