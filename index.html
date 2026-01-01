@@ -3,39 +3,105 @@
 <head>
   <meta charset="UTF-8">
   <title>note 投稿一覧</title>
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>note 投稿カレンダー</title>
+
+  <!-- TUI Calendar CSS -->
+  <link
+    rel="stylesheet"
+    href="https://uicdn.toast.com/calendar/latest/toastui-calendar.min.css"
+  />
+
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 16px;
+      background: #f6f6f6;
+    }
+    h1 {
+      font-size: 18px;
+      margin-bottom: 12px;
+    }
+    #calendar {
+      height: 800px;
+      background: #fff;
+      border-radius: 8px;
+      padding: 8px;
+    }
+  </style>
 </head>
 <body>
 
-<h1>note 投稿一覧</h1>
-<ul id="list">読み込み中...</ul>
+<h1>note 投稿カレンダー</h1>
+<div id="calendar"></div>
+
+<!-- TUI Calendar JS -->
+<script src="https://uicdn.toast.com/calendar/latest/toastui-calendar.min.js"></script>
 
 <script>
-  const USER = "mumeino"; // ← noteユーザーID
+  // ===== 設定 =====
+  const USER = "dododo0125"; // note ユーザーID
   const RSS_URL = `https://note.com/${USER}/rss`;
   const API_URL =
     `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(RSS_URL)}`;
 
+  // ===== カレンダー初期化 =====
+  const Calendar = tui.Calendar;
+
+  const calendar = new Calendar('#calendar', {
+    defaultView: 'month',
+    useDetailPopup: false,
+    useFormPopup: false,
+    month: {
+      startDayOfWeek: 0
+    },
+    calendars: [
+      {
+        id: 'note',
+        name: 'note',
+        backgroundColor: '#3ea8ff'
+      }
+    ]
+  });
+
+  // ===== RSS → カレンダーイベント変換 =====
   fetch(API_URL)
     .then(res => res.json())
     .then(data => {
-      const list = document.getElementById("list");
-      list.innerHTML = "";
+      const events = data.items.map(item => {
+        const date = item.pubDate.slice(0, 10);
 
-      data.items.forEach(item => {
-        const li = document.createElement("li");
-        li.innerHTML = `
-          <a href="${item.link}" target="_blank">
-            ${item.title}
-          </a>
-          <small>（${item.pubDate.slice(0, 10)}）</small>
-        `;
-        list.appendChild(li);
+        return {
+          id: item.guid || item.link,
+          calendarId: 'note',
+          title: item.title,
+          category: 'allday',
+          start: date,
+          end: date,
+          raw: {
+            link: item.link
+          }
+        };
       });
+
+      calendar.createEvents(events);
     })
     .catch(err => {
-      document.getElementById("list").innerText = "取得に失敗しました";
       console.error(err);
+      alert("データ取得に失敗しました");
     });
+
+  // ===== クリックで note を開く =====
+  calendar.on('selectEvent', event => {
+    const link = event.event.raw.link;
+    if (link) {
+      window.open(link, '_blank');
+    }
+  });
 </script>
 
 </body>
