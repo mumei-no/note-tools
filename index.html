@@ -1,55 +1,39 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<title>note 投稿カレンダー（月表示）</title>
+  <meta charset="UTF-8" />
+  <title>note カレンダー</title>
 
-<!-- Bulma -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+  <!-- Bulma -->
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css"
+  />
 
-<!-- TUI Calendar -->
-<link rel="stylesheet" href="https://uicdn.toast.com/calendar/latest/toastui-calendar.min.css">
+  <!-- TUI Calendar -->
+  <link
+    rel="stylesheet"
+    href="https://uicdn.toast.com/tui-calendar/latest/tui-calendar.css"
+  />
 
-<style>
-body.dark {
-  background-color: #121212;
-  color: #eaeaea;
-}
-
-body.dark .toastui-calendar-layout {
-  background-color: #1e1e1e;
-}
-
-/* ダークモード時の文字同化防止 */
-body.dark .toastui-calendar * {
-  color: #eaeaea !important;
-}
-
-.toastui-calendar-today {
-  font-weight: bold;
-}
-</style>
+  <style>
+    body {
+      padding: 1.5rem;
+    }
+    #calendar {
+      height: 800px;
+    }
+    .note-title {
+      margin-left: 0.4em;
+    }
+  </style>
 </head>
-
 <body>
+
 <section class="section">
   <div class="container">
-
-    <!-- 操作バー -->
-    <div class="level mb-4">
-      <div class="level-left">
-        <button id="prev" class="button">◀</button>
-        <button id="today" class="button mx-2">Today</button>
-        <button id="next" class="button">▶</button>
-      </div>
-      <div class="level-right">
-        <button id="toggleTheme" class="button is-small">🌙 / ☀</button>
-      </div>
-    </div>
-
-    <!-- カレンダー -->
-    <div id="calendar" style="height: 700px;"></div>
-
+    <h1 class="title is-4">note 投稿カレンダー</h1>
+    <div id="calendar"></div>
   </div>
 </section>
 
@@ -57,79 +41,71 @@ body.dark .toastui-calendar * {
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 
 <!-- TUI Calendar -->
-<script src="https://uicdn.toast.com/calendar/latest/toastui-calendar.min.js"></script>
+<script src="https://uicdn.toast.com/tui-calendar/latest/tui-calendar.js"></script>
 
 <script>
-let calendar;
-let isDark = false;
-
-/* ===== カレンダー生成 ===== */
-function createCalendar() {
-  if (calendar) calendar.destroy();
-
-  calendar = new tui.Calendar('#calendar', {
-    defaultView: 'month',
-    month: {
-      isAlways6Weeks: false,
-      startDayOfWeek: 0
-    },
+$(function () {
+  const calendar = new tui.Calendar("#calendar", {
+    defaultView: "month",
+    taskView: false,
+    scheduleView: ["time"],
     useDetailPopup: false,
-    usageStatistics: false
+    useCreationPopup: false,
+    month: {
+      startDayOfWeek: 0
+    }
   });
 
-  // 公式イベントクリック
-  calendar.on('clickEvent', function(info) {
-    const url = info.event.raw?.link;
-    if (url) window.open(url, '_blank');
+  const feeds = [
+    {
+      id: "mumeino",
+      label: "",
+      icon: "📝"
+    },
+    {
+      id: "info",
+      label: "📢",
+      icon: "📢"
+    }
+  ];
+
+  feeds.forEach(feed => {
+    const url = `https://api.allorigins.win/raw?url=https://note.com/${feed.id}/rss`;
+
+    $.get(url, function (data) {
+      const items = $(data).find("item");
+
+      items.each(function () {
+        const title = $(this).find("title").text();
+        const link = $(this).find("link").text();
+        const pubDate = new Date($(this).find("pubDate").text());
+
+        calendar.createSchedules([
+          {
+            id: link,
+            calendarId: feed.id,
+            title: `${feed.label}${feed.icon}<span class="note-title">${title}</span>`,
+            category: "time",
+            start: pubDate,
+            end: pubDate,
+            isReadOnly: true,
+            raw: {
+              link: link
+            }
+          }
+        ]);
+      });
+    });
   });
 
-  loadAllFeeds();
-}
-
-/* ===== RSS 読み込み（複数） ===== */
-function loadFeed(userId, calendarId, bgColor) {
-  const rssUrl = encodeURIComponent(`https://note.com/${userId}/rss`);
-  const api = `https://api.rss2json.com/v1/api.json?rss_url=${rssUrl}`;
-
-  return $.getJSON(api, function(data) {
-    const events = data.items.map(item => ({
-      id: item.guid,
-      calendarId,
-      title: item.title,
-      start: item.pubDate,
-      end: item.pubDate,
-      isAllDay: true,
-      category: 'allday',
-      backgroundColor: bgColor,
-      raw: {
-        link: item.link
-      }
-    }));
-    calendar.createEvents(events);
-  });
-}
-
-function loadAllFeeds() {
-  // 個人
-  loadFeed('mumeino', 'mumeino', '#3273dc'); // Bulma blue
-
-  // note公式
-  loadFeed('info', 'note-info', '#23d160'); // Bulma green
-}
-
-/* ===== 初期化 ===== */
-$(function() {
-  createCalendar();
-
-  $('#prev').on('click', () => calendar.prev());
-  $('#next').on('click', () => calendar.next());
-  $('#today').on('click', () => calendar.today());
-
-  $('#toggleTheme').on('click', function() {
-    isDark = !isDark;
-    $('body').toggleClass('dark', isDark);
+  calendar.on("clickSchedule", function (e) {
+    const link = e.schedule.raw.link;
+    if (link) {
+      window.open(link, "_blank");
+    }
   });
 });
 </script>
+
 </body>
 </html>
