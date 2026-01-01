@@ -1,11 +1,6 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <title>note 投稿一覧</title>
-<!DOCTYPE html>
-<html lang="ja">
-<head>
   <meta charset="UTF-8" />
   <title>note 投稿カレンダー</title>
 
@@ -22,10 +17,32 @@
       padding: 16px;
       background: #f6f6f6;
     }
+
     h1 {
       font-size: 18px;
-      margin-bottom: 12px;
+      margin-bottom: 8px;
     }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .toolbar button {
+      padding: 4px 10px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      background: #fff;
+      cursor: pointer;
+    }
+
+    #currentMonth {
+      margin-left: auto;
+      font-weight: bold;
+    }
+
     #calendar {
       height: 800px;
       background: #fff;
@@ -37,6 +54,14 @@
 <body>
 
 <h1>note 投稿カレンダー</h1>
+
+<div class="toolbar">
+  <button id="prev">◀</button>
+  <button id="today">今日</button>
+  <button id="next">▶</button>
+  <div id="currentMonth"></div>
+</div>
+
 <div id="calendar"></div>
 
 <!-- TUI Calendar JS -->
@@ -44,21 +69,31 @@
 
 <script>
   // ===== 設定 =====
-  const USER = "mumeino"; // note ユーザーID
+  const USER = "mumeino";
   const RSS_URL = `https://note.com/${USER}/rss`;
   const API_URL =
     `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(RSS_URL)}`;
 
-  // ===== カレンダー初期化 =====
   const Calendar = tui.Calendar;
 
+  // ===== カレンダー初期化 =====
   const calendar = new Calendar('#calendar', {
     defaultView: 'month',
     useDetailPopup: false,
     useFormPopup: false,
+
     month: {
-      startDayOfWeek: 0
+      startDayOfWeek: 0,
+      visibleWeeksCount: 6
     },
+
+    week: {
+      showTimezoneCollapseButton: true,
+      timezonesCollapsed: false,
+      hourStart: 6,
+      hourEnd: 24
+    },
+
     calendars: [
       {
         id: 'note',
@@ -68,20 +103,48 @@
     ]
   });
 
-  // ===== RSS → カレンダーイベント変換 =====
+  // ===== 表示中の年月を更新 =====
+  function updateMonthLabel() {
+    const date = calendar.getDate();
+    const y = date.getFullYear();
+    const m = date.getMonth() + 1;
+    document.getElementById('currentMonth').textContent =
+      `${y}年 ${m}月`;
+  }
+
+  updateMonthLabel();
+
+  // ===== ナビゲーション =====
+  document.getElementById('prev').onclick = () => {
+    calendar.prev();
+    updateMonthLabel();
+  };
+
+  document.getElementById('next').onclick = () => {
+    calendar.next();
+    updateMonthLabel();
+  };
+
+  document.getElementById('today').onclick = () => {
+    calendar.today();
+    updateMonthLabel();
+  };
+
+  // ===== RSS → イベント変換（時間つき） =====
   fetch(API_URL)
     .then(res => res.json())
     .then(data => {
       const events = data.items.map(item => {
-        const date = item.pubDate.slice(0, 10);
+        const start = new Date(item.pubDate);
+        const end = new Date(start.getTime() + 30 * 60 * 1000); // 30分表示
 
         return {
           id: item.guid || item.link,
           calendarId: 'note',
           title: item.title,
-          category: 'allday',
-          start: date,
-          end: date,
+          category: 'time',
+          start: start.toISOString(),
+          end: end.toISOString(),
           raw: {
             link: item.link
           }
