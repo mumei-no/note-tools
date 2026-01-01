@@ -145,48 +145,315 @@
     updateMonthLabel();
   };
 
-  // ==============================
-  // RSS → カレンダーイベント
-  // ==============================
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>note 投稿手帳</title>
+
+  <!-- TUI Calendar CSS -->
+  <link
+    rel="stylesheet"
+    href="https://uicdn.toast.com/calendar/latest/toastui-calendar.min.css"
+  />
+
+  <style>
+    /* ===== 全体 ===== */
+    body {
+      font-family: "Hiragino Mincho ProN", "Yu Mincho", serif;
+      margin: 0;
+      padding: 20px;
+      background: #f3f0e8; /* 紙色 */
+      color: #333;
+    }
+
+    h1 {
+      font-size: 18px;
+      margin-bottom: 12px;
+      font-weight: normal;
+    }
+
+    /* ===== ツールバー ===== */
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+
+    .toolbar button {
+      padding: 2px 8px;
+      border: 1px solid #aaa;
+      background: #faf8f2;
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    #currentMonth {
+      margin-left: auto;
+      letter-spacing: 0.1em;
+    }
+
+    /* ===== カレンダー本体 ===== */
+    #calendar {
+      height: 800px;
+      background: #faf8f2;
+      border: 1px solid #bbb;
+      padding: 4px;
+    }
+
+    /* ===== TUI Calendar 上書き ===== */
+
+    /* グリッド線を薄く */
+    .toastui-calendar-weekday-grid-line,
+    .toastui-calendar-month-grid-line {
+      border-color: #ddd !important;
+    }
+
+    /* 日付数字 */
+    .toastui-calendar-weekday-grid-date {
+      font-size: 12px;
+      color: #555;
+    }
+
+    /* イベント表示（紙のメモ風） */
+    .toastui-calendar-event {
+      background: none !important;
+      border: none !important;
+      padding: 0 !important;
+    }
+
+    .toastui-calendar-event-title {
+      font-size: 12px;
+      color: #222;
+      border-bottom: 1px solid #999; /* 下線 */
+      display: inline-block;
+      padding-bottom: 1px;
+    }
+
+    /* 今日を控えめに */
+    .toastui-calendar-today {
+      background: rgba(0, 0, 0, 0.03) !important;
+    }
+  </style>
+</head>
+<body>
+
+<h1>note 投稿手帳</h1>
+
+<div class="toolbar">
+  <button id="prev">◀</button>
+  <button id="today">今日</button>
+  <button id="next">▶</button>
+  <div id="currentMonth"></div>
+</div>
+
+<div id="calendar"></div>
+
+<!-- TUI Calendar JS -->
+<script src="https://uicdn.toast.com/calendar/latest/toastui-calendar.min.js"></script>
+
+<script>
+  const USER = "mumeino";
+  const RSS_URL = `https://note.com/${USER}/rss`;
+  const API_URL =
+    `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(RSS_URL)}`;
+
+  const calendar = new tui.Calendar('#calendar', {
+    defaultView: 'month',
+    useDetailPopup: false,
+    useFormPopup: false,
+
+    month: {
+      startDayOfWeek: 0
+    },
+
+    calendars: [
+      {
+        id: 'note',
+        name: 'note'
+      }
+    ]
+  });
+
+  function updateMonthLabel() {
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>note 投稿手帳</title>
+
+  <!-- TUI Calendar CSS -->
+  <link
+    rel="stylesheet"
+    href="https://uicdn.toast.com/calendar/latest/toastui-calendar.min.css"
+  />
+
+  <style>
+    /* ===== 全体 ===== */
+    body {
+      font-family: "Hiragino Mincho ProN", "Yu Mincho", serif;
+      margin: 0;
+      padding: 20px;
+      background: #f3f0e8; /* 紙色 */
+      color: #333;
+    }
+
+    h1 {
+      font-size: 18px;
+      margin-bottom: 12px;
+      font-weight: normal;
+    }
+
+    /* ===== ツールバー ===== */
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+
+    .toolbar button {
+      padding: 2px 8px;
+      border: 1px solid #aaa;
+      background: #faf8f2;
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    #currentMonth {
+      margin-left: auto;
+      letter-spacing: 0.1em;
+    }
+
+    /* ===== カレンダー本体 ===== */
+    #calendar {
+      height: 800px;
+      background: #faf8f2;
+      border: 1px solid #bbb;
+      padding: 4px;
+    }
+
+    /* ===== TUI Calendar 上書き ===== */
+
+    /* グリッド線を薄く */
+    .toastui-calendar-weekday-grid-line,
+    .toastui-calendar-month-grid-line {
+      border-color: #ddd !important;
+    }
+
+    /* 日付数字 */
+    .toastui-calendar-weekday-grid-date {
+      font-size: 12px;
+      color: #555;
+    }
+
+    /* イベント表示（紙のメモ風） */
+    .toastui-calendar-event {
+      background: none !important;
+      border: none !important;
+      padding: 0 !important;
+    }
+
+    .toastui-calendar-event-title {
+      font-size: 12px;
+      color: #222;
+      border-bottom: 1px solid #999; /* 下線 */
+      display: inline-block;
+      padding-bottom: 1px;
+    }
+
+    /* 今日を控えめに */
+    .toastui-calendar-today {
+      background: rgba(0, 0, 0, 0.03) !important;
+    }
+  </style>
+</head>
+<body>
+
+<h1>note 投稿手帳</h1>
+
+<div class="toolbar">
+  <button id="prev">◀</button>
+  <button id="today">今日</button>
+  <button id="next">▶</button>
+  <div id="currentMonth"></div>
+</div>
+
+<div id="calendar"></div>
+
+<!-- TUI Calendar JS -->
+<script src="https://uicdn.toast.com/calendar/latest/toastui-calendar.min.js"></script>
+
+<script>
+  const USER = "mumeino";
+  const RSS_URL = `https://note.com/${USER}/rss`;
+  const API_URL =
+    `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(RSS_URL)}`;
+
+  const calendar = new tui.Calendar('#calendar', {
+    defaultView: 'month',
+    useDetailPopup: false,
+    useFormPopup: false,
+
+    month: {
+      startDayOfWeek: 0
+    },
+
+    calendars: [
+      {
+        id: 'note',
+        name: 'note'
+      }
+    ]
+  });
+
+  function updateMonthLabel() {
+    const d = calendar.getDate();
+    document.getElementById('currentMonth').textContent =
+      `${d.getFullYear()}年 ${d.getMonth() + 1}月`;
+  }
+
+  updateMonthLabel();
+
+  document.getElementById('prev').onclick = () => {
+    calendar.prev();
+    updateMonthLabel();
+  };
+  document.getElementById('next').onclick = () => {
+    calendar.next();
+    updateMonthLabel();
+  };
+  document.getElementById('today').onclick = () => {
+    calendar.today();
+    updateMonthLabel();
+  };
+
   fetch(API_URL)
-    .then(res => res.json())
+    .then(r => r.json())
     .then(data => {
       const events = data.items.map(item => {
-        // RSSはUTC
-        const utcStart = new Date(item.pubDate);
-        const utcEnd = new Date(utcStart.getTime() + 30 * 60 * 1000);
+        const start = new Date(item.pubDate);
+        const end = new Date(start.getTime() + 30 * 60 * 1000);
 
         return {
-          id: item.guid || item.link,
+          id: item.link,
           calendarId: 'note',
           title: item.title,
           category: 'time',
-
-          // ★ ZなしISO → JSTとして描画される
-          start: toLocalISOString(utcStart),
-          end: toLocalISOString(utcEnd),
-
-          raw: {
-            link: item.link
-          }
+          start,
+          end,
+          raw: { link: item.link }
         };
       });
 
       calendar.createEvents(events);
-    })
-    .catch(err => {
-      console.error(err);
-      alert("データ取得に失敗しました");
     });
 
-  // ==============================
-  // クリックで note を開く
-  // ==============================
-  calendar.on('selectEvent', event => {
-    const link = event.event.raw.link;
-    if (link) {
-      window.open(link, '_blank');
-    }
+  calendar.on('selectEvent', e => {
+    window.open(e.event.raw.link, '_blank');
   });
 </script>
 
