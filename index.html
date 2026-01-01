@@ -1,196 +1,128 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <title>note投稿カレンダー</title>
+<meta charset="UTF-8">
+<title>note 投稿カレンダー（2週間）</title>
 
-  <!-- Bulma -->
-  <link rel="stylesheet"
-        href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+<!-- Bulma -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
 
-  <!-- TUI Calendar -->
-  <link rel="stylesheet"
-        href="https://uicdn.toast.com/calendar/latest/toastui-calendar.min.css">
+<!-- TUI Calendar -->
+<link rel="stylesheet" href="https://uicdn.toast.com/calendar/latest/toastui-calendar.min.css">
 
-  <!-- jQuery -->
-  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<style>
+body.dark {
+  background-color: #121212;
+  color: #eaeaea;
+}
 
-  <style>
-    body.is-dark {
-      background: #1e1e1e;
-    }
-    body.is-dark .box {
-      background: #2a2a2a;
-      color: #eaeaea;
-    }
-    body.is-dark .title,
-    body.is-dark .button {
-      color: #eaeaea;
-    }
-    body.is-dark .button {
-      background: #363636;
-      border-color: #4a4a4a;
-    }
+/* カレンダー背景 */
+body.dark .toastui-calendar-layout {
+  background-color: #1e1e1e;
+}
 
-    #calendar {
-      height: calc(100vh - 140px);
-    }
-  </style>
+/* ダークモード時の文字色補正（重要） */
+body.dark .toastui-calendar * {
+  color: #eaeaea !important;
+}
+
+/* 今日の強調 */
+.toastui-calendar-today {
+  font-weight: bold;
+}
+</style>
 </head>
 
 <body>
-
-<section class="section pb-3">
+<section class="section">
   <div class="container">
-    <div class="box">
-      <div class="level">
-        <div class="level-left">
-          <h1 class="title is-5">note投稿カレンダー（mumeino）</h1>
-        </div>
-        <div class="level-right">
-          <div class="buttons are-small">
-            <button class="button" id="prev">◀</button>
-            <button class="button" id="today">今日</button>
-            <button class="button" id="next">▶</button>
-            <button class="button is-light" id="toggleTheme">🌙 / ☀</button>
-          </div>
-        </div>
+    <div class="level">
+      <div class="level-left">
+        <button id="prev" class="button">◀</button>
+        <button id="today" class="button mx-2">Today</button>
+        <button id="next" class="button">▶</button>
+      </div>
+      <div class="level-right">
+        <button id="toggleTheme" class="button is-small">
+          🌙 / ☀
+        </button>
       </div>
     </div>
+
+    <div id="calendar" style="height: 600px;"></div>
   </div>
 </section>
 
-<section class="section pt-0">
-  <div class="container">
-    <div class="box">
-      <div id="calendar"></div>
-    </div>
-  </div>
-</section>
+<!-- jQuery -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 
+<!-- TUI Calendar -->
 <script src="https://uicdn.toast.com/calendar/latest/toastui-calendar.min.js"></script>
 
 <script>
-$(function () {
+let calendar;
+let isDark = false;
 
-  let calendar;
-  let events = [];
+function createCalendar() {
+  if (calendar) calendar.destroy();
 
-  const lightTheme = {
-    common: {
-      backgroundColor: '#ffffff',
-      border: '1px solid #dbdbdb'
-    },
+  calendar = new tui.Calendar('#calendar', {
+    defaultView: 'month',
     month: {
-      dayName: { color: '#363636' }
-    }
-  };
-
-  const darkTheme = {
-    common: {
-      backgroundColor: '#2a2a2a',
-      border: '1px solid #444'
+      visibleWeeksCount: 2,
+      isAlways6Weeks: false,
+      startDayOfWeek: 0
     },
-    month: {
-      dayName: { color: '#eaeaea' },
-      gridCell: {
-        headerHeight: 31,
-        footerHeight: 0,
-        border: '1px solid #444'
-      },
-      dayGrid: {
-        backgroundColor: '#2a2a2a'
-      },
-      dayName: {
-        color: '#eaeaea'
-      },
-      moreView: {
-        backgroundColor: '#2a2a2a'
-      },
-      dayName: {
-        color: '#eaeaea'
-      },
-      dayName: {
-        color: '#eaeaea'
+    useDetailPopup: false,
+    usageStatistics: false
+  });
+
+  loadNotePosts();
+}
+
+function loadNotePosts() {
+  const rssUrl = encodeURIComponent('https://note.com/mumeino/rss');
+  const api = `https://api.rss2json.com/v1/api.json?rss_url=${rssUrl}`;
+
+  $.getJSON(api, function(data) {
+    const events = data.items.map(item => ({
+      id: item.guid,
+      calendarId: 'note',
+      title: item.title,
+      start: item.pubDate,
+      end: item.pubDate,
+      isAllDay: true,
+      category: 'allday',
+      raw: {
+        link: item.link
       }
-    },
-    week: {
-      dayName: {
-        color: '#eaeaea'
-      },
-      today: {
-        color: '#ffd54f'
-      },
-      pastDay: {
-        color: '#bdbdbd'
-      },
-      futureDay: {
-        color: '#eaeaea'
-      }
-    }
-  };
+    }));
 
-  function createCalendar(theme) {
-    if (calendar) calendar.destroy();
+    calendar.createEvents(events);
+  });
+}
 
-    calendar = new tui.Calendar('#calendar', {
-      defaultView: 'month',
-      usageStatistics: false,
-      isReadOnly: true,
-      theme: theme,
-      month: { startDayOfWeek: 0 }
-    });
+$(function() {
+  createCalendar();
 
-    calendar.on('clickEvent', e => {
-      e.event.url && window.open(e.event.url, '_blank', 'noopener');
-    });
-
-    if (events.length) calendar.createEvents(events);
-  }
-
-  // 初期表示
-  createCalendar(lightTheme);
-
-  // 操作
   $('#prev').on('click', () => calendar.prev());
   $('#next').on('click', () => calendar.next());
   $('#today').on('click', () => calendar.today());
 
-  $('#toggleTheme').on('click', () => {
-    $('body').toggleClass('is-dark');
-    createCalendar($('body').hasClass('is-dark') ? darkTheme : lightTheme);
+  $('#toggleTheme').on('click', function() {
+    isDark = !isDark;
+    $('body').toggleClass('dark', isDark);
   });
 
-  // RSS取得
-  const api =
-    'https://api.rss2json.com/v1/api.json?rss_url=' +
-    encodeURIComponent('https://note.com/mumeino/rss');
-
-  $.getJSON(api, data => {
-    events = data.items.map(item => {
-      const d = new Date(item.pubDate);
-      const y = d.getUTCFullYear();
-      const m = String(d.getUTCMonth() + 1).padStart(2, '0');
-      const day = String(d.getUTCDate()).padStart(2, '0');
-
-      return {
-        id: item.guid,
-        calendarId: 'note',
-        title: item.title,
-        category: 'allday',
-        start: `${y}-${m}-${day}`,
-        end: `${y}-${m}-${day}`,
-        url: item.link,
-        backgroundColor: '#795548',
-        color: '#fff'
-      };
-    });
-
-    calendar.createEvents(events);
+  // イベントクリックで note を開く
+  $('#calendar').on('click', '.toastui-calendar-event', function() {
+    const eventId = $(this).data('event-id');
+    const event = calendar.getEvent(eventId);
+    if (event?.raw?.link) {
+      window.open(event.raw.link, '_blank');
+    }
   });
-
 });
 </script>
-
 </body>
 </html>
