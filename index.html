@@ -412,50 +412,303 @@
 
   function updateMonthLabel() {
     const d = calendar.getDate();
-    document.getElementById('currentMonth').textContent =
-      `${d.getFullYear()}年 ${d.getMonth() + 1}月`;
-  }
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>note投稿カレンダー（紙の手帳風）</title>
 
-  updateMonthLabel();
+  <!-- TUI Calendar -->
+  <link rel="stylesheet" href="https://uicdn.toast.com/calendar/latest/toastui-calendar.min.css" />
 
-  document.getElementById('prev').onclick = () => {
-    calendar.prev();
-    updateMonthLabel();
-  };
-  document.getElementById('next').onclick = () => {
-    calendar.next();
-    updateMonthLabel();
-  };
-  document.getElementById('today').onclick = () => {
-    calendar.today();
-    updateMonthLabel();
-  };
+  <style>
+    :root {
+      --bg: #faf7f2;
+      --paper: #ffffff;
+      --text: #333;
+      --line: #e0dcd3;
+      --accent: #6b4f3f;
+    }
 
-  fetch(API_URL)
-    .then(r => r.json())
-    .then(data => {
-      const events = data.items.map(item => {
-        const start = new Date(item.pubDate);
-        const end = new Date(start.getTime() + 30 * 60 * 1000);
+    body.dark {
+      --bg: #1e1e1e;
+      --paper: #2a2a2a;
+      --text: #eaeaea;
+      --line: #444;
+      --accent: #c8a97e;
+    }
 
-        return {
-          id: item.link,
-          calendarId: 'note',
-          title: item.title,
-          category: 'time',
-          start,
-          end,
-          raw: { link: item.link }
-        };
-      });
+    body {
+      margin: 0;
+      font-family: "Hiragino Mincho ProN", "Yu Mincho", serif;
+      background: var(--bg);
+      color: var(--text);
+    }
 
-      calendar.createEvents(events);
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--line);
+      background: var(--paper);
+    }
+
+    header h1 {
+      font-size: 18px;
+      margin: 0;
+    }
+
+    .controls {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    button {
+      padding: 6px 10px;
+      font-size: 14px;
+      cursor: pointer;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      color: var(--text);
+      border-radius: 4px;
+    }
+
+    button:hover {
+      background: rgba(0,0,0,0.05);
+    }
+
+    #calendar {
+      height: calc(100vh - 60px);
+      background: var(--paper);
+    }
+
+    /* 紙っぽさ */
+    .toastui-calendar-layout {
+      background-image: repeating-linear-gradient(
+        to bottom,
+        transparent,
+        transparent 28px,
+        var(--line) 29px
+      );
+    }
+
+    .toastui-calendar-day-name {
+      font-weight: normal;
+      color: var(--accent);
+    }
+
+    .toastui-calendar-event-title {
+      font-size: 12px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>note投稿カレンダー（mumeino）</h1>
+    <div class="controls">
+      <button id="prev">◀</button>
+      <button id="today">今日</button>
+      <button id="next">▶</button>
+      <button id="toggleTheme">🌙 / ☀</button>
+    </div>
+  </header>
+
+  <div id="calendar"></div>
+
+  <script src="https://uicdn.toast.com/calendar/latest/toastui-calendar.min.js"></script>
+
+  <script>
+    const Calendar = tui.Calendar;
+
+    const calendar = new Calendar('#calendar', {
+      defaultView: 'month',
+      usageStatistics: false,
+      isReadOnly: true,
+      month: {
+        startDayOfWeek: 0
+      }
     });
 
-  calendar.on('selectEvent', e => {
-    window.open(e.event.raw.link, '_blank');
-  });
-</script>
+    // ナビゲーション
+    document.getElementById('prev').onclick = () => calendar.prev();
+    document.getElementById('next').onclick = () => calendar.next();
+    document.getElementById('today').onclick = () => calendar.today();
 
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>note投稿カレンダー（紙の手帳風）</title>
+
+  <!-- TUI Calendar -->
+  <link rel="stylesheet" href="https://uicdn.toast.com/calendar/latest/toastui-calendar.min.css" />
+
+  <style>
+    :root {
+      --bg: #faf7f2;
+      --paper: #ffffff;
+      --text: #333;
+      --line: #e0dcd3;
+      --accent: #6b4f3f;
+    }
+
+    body.dark {
+      --bg: #1e1e1e;
+      --paper: #2a2a2a;
+      --text: #eaeaea;
+      --line: #444;
+      --accent: #c8a97e;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Hiragino Mincho ProN", "Yu Mincho", serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--line);
+      background: var(--paper);
+    }
+
+    header h1 {
+      font-size: 18px;
+      margin: 0;
+    }
+
+    .controls {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    button {
+      padding: 6px 10px;
+      font-size: 14px;
+      cursor: pointer;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      color: var(--text);
+      border-radius: 4px;
+    }
+
+    button:hover {
+      background: rgba(0,0,0,0.05);
+    }
+
+    #calendar {
+      height: calc(100vh - 60px);
+      background: var(--paper);
+    }
+
+    /* 紙っぽさ */
+    .toastui-calendar-layout {
+      background-image: repeating-linear-gradient(
+        to bottom,
+        transparent,
+        transparent 28px,
+        var(--line) 29px
+      );
+    }
+
+    .toastui-calendar-day-name {
+      font-weight: normal;
+      color: var(--accent);
+    }
+
+    .toastui-calendar-event-title {
+      font-size: 12px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>note投稿カレンダー（mumeino）</h1>
+    <div class="controls">
+      <button id="prev">◀</button>
+      <button id="today">今日</button>
+      <button id="next">▶</button>
+      <button id="toggleTheme">🌙 / ☀</button>
+    </div>
+  </header>
+
+  <div id="calendar"></div>
+
+  <script src="https://uicdn.toast.com/calendar/latest/toastui-calendar.min.js"></script>
+
+  <script>
+    const Calendar = tui.Calendar;
+
+    const calendar = new Calendar('#calendar', {
+      defaultView: 'month',
+      usageStatistics: false,
+      isReadOnly: true,
+      month: {
+        startDayOfWeek: 0
+      }
+    });
+
+    // ナビゲーション
+    document.getElementById('prev').onclick = () => calendar.prev();
+    document.getElementById('next').onclick = () => calendar.next();
+    document.getElementById('today').onclick = () => calendar.today();
+
+    // ライト / ダーク切替
+    document.getElementById('toggleTheme').onclick = () => {
+      document.body.classList.toggle('dark');
+    };
+
+    // イベントクリック → note記事を開く
+    calendar.on('clickEvent', ({ event }) => {
+      if (event.url) {
+        window.open(event.url, '_blank', 'noopener');
+      }
+    });
+
+    // note RSS → rss2json
+    const RSS_URL = encodeURIComponent('https://note.com/mumeino/rss');
+    const API = `https://api.rss2json.com/v1/api.json?rss_url=${RSS_URL}`;
+
+    fetch(API)
+      .then(res => res.json())
+      .then(data => {
+        const events = data.items.map(item => {
+          const date = new Date(item.pubDate);
+
+          const y = date.getFullYear();
+          const m = String(date.getMonth() + 1).padStart(2, '0');
+          const d = String(date.getDate()).padStart(2, '0');
+
+          return {
+            id: item.guid,
+            calendarId: 'note',
+            title: item.title,
+            category: 'allday',
+            start: `${y}-${m}-${d}`,
+            end: `${y}-${m}-${d}`,
+            url: item.link, // ← ここがポイント
+            backgroundColor: '#6b4f3f',
+            color: '#fff'
+          };
+        });
+
+        calendar.createEvents(events);
+      })
+      .catch(err => {
+        console.error(err);
+        alert('投稿の取得に失敗しました');
+      });
+  </script>
 </body>
 </html>
