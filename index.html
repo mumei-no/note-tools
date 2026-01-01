@@ -82,13 +82,7 @@ $(function () {
       border: '1px solid #dbdbdb'
     },
     month: {
-      dayName: {
-        color: '#363636'
-      },
-      gridCell: {
-        headerHeight: 31,
-        footerHeight: 0
-      }
+      dayName: { color: '#363636' }
     }
   };
 
@@ -98,12 +92,40 @@ $(function () {
       border: '1px solid #444'
     },
     month: {
+      dayName: { color: '#eaeaea' },
+      gridCell: {
+        headerHeight: 31,
+        footerHeight: 0,
+        border: '1px solid #444'
+      },
+      dayGrid: {
+        backgroundColor: '#2a2a2a'
+      },
       dayName: {
         color: '#eaeaea'
       },
-      gridCell: {
-        headerHeight: 31,
-        footerHeight: 0
+      moreView: {
+        backgroundColor: '#2a2a2a'
+      },
+      dayName: {
+        color: '#eaeaea'
+      },
+      dayName: {
+        color: '#eaeaea'
+      }
+    },
+    week: {
+      dayName: {
+        color: '#eaeaea'
+      },
+      today: {
+        color: '#ffd54f'
+      },
+      pastDay: {
+        color: '#bdbdbd'
+      },
+      futureDay: {
+        color: '#eaeaea'
       }
     }
   };
@@ -126,10 +148,10 @@ $(function () {
     if (events.length) calendar.createEvents(events);
   }
 
-  // 初期生成（ライト）
+  // 初期表示
   createCalendar(lightTheme);
 
-  // UI操作
+  // 操作
   $('#prev').on('click', () => calendar.prev());
   $('#next').on('click', () => calendar.next());
   $('#today').on('click', () => calendar.today());
@@ -139,7 +161,7 @@ $(function () {
     createCalendar($('body').hasClass('is-dark') ? darkTheme : lightTheme);
   });
 
-  // note RSS → rss2json
+  // RSS取得
   const api =
     'https://api.rss2json.com/v1/api.json?rss_url=' +
     encodeURIComponent('https://note.com/mumeino/rss');
