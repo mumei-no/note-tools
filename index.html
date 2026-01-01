@@ -4,84 +4,88 @@
   <meta charset="UTF-8" />
   <title>note投稿カレンダー</title>
 
+  <!-- Bulma -->
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css"
+  />
+
   <!-- TUI Calendar -->
-  <link rel="stylesheet" href="https://uicdn.toast.com/calendar/latest/toastui-calendar.min.css" />
+  <link
+    rel="stylesheet"
+    href="https://uicdn.toast.com/calendar/latest/toastui-calendar.min.css"
+  />
 
   <style>
-    :root {
-      --bg: #faf7f2;
-      --paper: #ffffff;
-      --text: #333;
-      --accent: #6b4f3f;
+    /* ダークモード時の補正 */
+    body.is-dark {
+      background-color: #1e1e1e;
     }
 
-    body.dark {
-      --bg: #1e1e1e;
-      --paper: #2a2a2a;
-      --text: #eaeaea;
-      --accent: #c8a97e;
+    body.is-dark .box {
+      background-color: #2a2a2a;
+      color: #eaeaea;
     }
 
-    body {
-      margin: 0;
-      font-family: "Hiragino Mincho ProN", "Yu Mincho", serif;
-      background: var(--bg);
-      color: var(--text);
+    body.is-dark .title,
+    body.is-dark .button {
+      color: #eaeaea;
     }
 
-    header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 12px 16px;
-      border-bottom: 1px solid #ddd;
-      background: var(--paper);
+    body.is-dark .button {
+      background-color: #363636;
+      border-color: #4a4a4a;
     }
 
-    header h1 {
-      font-size: 18px;
-      margin: 0;
-    }
-
-    .controls {
-      display: flex;
-      gap: 8px;
-    }
-
-    button {
-      padding: 6px 10px;
-      font-size: 14px;
-      cursor: pointer;
-      background: var(--paper);
-      border: 1px solid #ccc;
-      color: var(--text);
-      border-radius: 4px;
+    body.is-dark .button:hover {
+      background-color: #404040;
     }
 
     #calendar {
-      height: calc(100vh - 60px);
-      background: var(--paper);
+      height: calc(100vh - 140px);
     }
 
     .toastui-calendar-event-title {
-      font-size: 12px;
       cursor: pointer;
+      font-size: 0.8rem;
     }
   </style>
 </head>
 
 <body>
-  <header>
-    <h1>note投稿カレンダー（mumeino）</h1>
-    <div class="controls">
-      <button id="prev">◀</button>
-      <button id="today">今日</button>
-      <button id="next">▶</button>
-      <button id="toggleTheme">🌙 / ☀</button>
+  <!-- ヘッダー -->
+  <section class="section pb-3">
+    <div class="container">
+      <div class="box">
+        <div class="level">
+          <div class="level-left">
+            <h1 class="title is-5 mb-0">
+              note投稿カレンダー（mumeino）
+            </h1>
+          </div>
+          <div class="level-right">
+            <div class="buttons are-small">
+              <button class="button" id="prev">◀</button>
+              <button class="button" id="today">今日</button>
+              <button class="button" id="next">▶</button>
+              <button class="button is-light" id="toggleTheme">
+                🌙 / ☀
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-  </header>
+  </section>
 
-  <div id="calendar"></div>
+  <!-- カレンダー -->
+  <section class="section pt-0">
+    <div class="container">
+      <div class="box">
+        <div id="calendar"></div>
+      </div>
+    </div>
+  </section>
 
   <script src="https://uicdn.toast.com/calendar/latest/toastui-calendar.min.js"></script>
 
@@ -97,17 +101,17 @@
       }
     });
 
-    // 月移動
+    // ナビゲーション
     document.getElementById('prev').onclick = () => calendar.prev();
     document.getElementById('next').onclick = () => calendar.next();
     document.getElementById('today').onclick = () => calendar.today();
 
-    // ライト / ダーク切替
+    // Bulma方式 ライト / ダーク切替
     document.getElementById('toggleTheme').onclick = () => {
-      document.body.classList.toggle('dark');
+      document.body.classList.toggle('is-dark');
     };
 
-    // イベントクリック → note記事を開く
+    // イベントクリック → note記事
     calendar.on('clickEvent', ({ event }) => {
       if (event.url) {
         window.open(event.url, '_blank', 'noopener');
@@ -124,7 +128,7 @@
         const events = data.items.map(item => {
           const date = new Date(item.pubDate);
 
-          // UTCのまま日付だけ使う（安定）
+          // UTC日付のみ（安定）
           const y = date.getUTCFullYear();
           const m = String(date.getUTCMonth() + 1).padStart(2, '0');
           const d = String(date.getUTCDate()).padStart(2, '0');
@@ -137,7 +141,7 @@
             start: `${y}-${m}-${d}`,
             end: `${y}-${m}-${d}`,
             url: item.link,
-            backgroundColor: '#6b4f3f',
+            backgroundColor: '#795548',
             color: '#fff'
           };
         });
