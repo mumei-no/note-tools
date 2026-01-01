@@ -2,13 +2,13 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>note カレンダー</title>
+  <title>note 投稿カレンダー</title>
 
   <!-- Bulma -->
   <link rel="stylesheet"
         href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
 
-  <!-- TUI Calendar CSS -->
+  <!-- TUI Calendar -->
   <link rel="stylesheet"
         href="https://uicdn.toast.com/calendar/latest/toastui-calendar.min.css">
 
@@ -16,11 +16,38 @@
     body {
       padding: 1.5rem;
     }
+
+    #calendar-wrapper {
+      position: relative;
+      overflow: hidden;
+    }
+
     #calendar {
       height: 800px;
+      transition: opacity 0.25s ease, transform 0.25s ease;
     }
+
+    .fade-out-left {
+      opacity: 0;
+      transform: translateX(-30px);
+    }
+
+    .fade-out-right {
+      opacity: 0;
+      transform: translateX(30px);
+    }
+
+    .fade-in {
+      opacity: 1;
+      transform: translateX(0);
+    }
+
     .note-title {
       margin-left: 0.3em;
+    }
+
+    .calendar-controls {
+      margin-bottom: 1rem;
     }
   </style>
 </head>
@@ -28,24 +55,40 @@
 
 <section class="section">
   <div class="container">
+
     <h1 class="title is-4">note 投稿カレンダー</h1>
-    <div id="calendar"></div>
+
+    <!-- 月移動ボタン -->
+    <div class="buttons calendar-controls">
+      <button id="prevMonth" class="button is-small">◀ 前月</button>
+      <button id="today" class="button is-small">今月</button>
+      <button id="nextMonth" class="button is-small">次月 ▶</button>
+    </div>
+
+    <div id="calendar-wrapper">
+      <div id="calendar"></div>
+    </div>
+
   </div>
 </section>
 
 <!-- jQuery -->
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 
-<!-- dayjs（★必須） -->
+<!-- dayjs -->
 <script src="https://cdn.jsdelivr.net/npm/dayjs@1/dayjs.min.js"></script>
 
-<!-- TUI Calendar JS -->
+<!-- TUI Calendar -->
 <script src="https://uicdn.toast.com/calendar/latest/toastui-calendar.min.js"></script>
+
+<!-- Hammer.js -->
+<script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
 
 <script>
 $(function () {
 
   const Calendar = tui.Calendar;
+  const $calendarEl = $('#calendar');
 
   const calendar = new Calendar('#calendar', {
     defaultView: 'month',
@@ -55,6 +98,44 @@ $(function () {
     useCreationPopup: false
   });
 
+  function animateMove(direction, action) {
+    const outClass = direction === 'next'
+      ? 'fade-out-left'
+      : 'fade-out-right';
+
+    $calendarEl
+      .removeClass('fade-in')
+      .addClass(outClass);
+
+    setTimeout(() => {
+      action();
+      $calendarEl
+        .removeClass(outClass)
+        .addClass('fade-in');
+    }, 250);
+  }
+
+  /* ---------- ボタン ---------- */
+  $('#prevMonth').on('click', () =>
+    animateMove('prev', () => calendar.prev())
+  );
+
+  $('#nextMonth').on('click', () =>
+    animateMove('next', () => calendar.next())
+  );
+
+  $('#today').on('click', () => calendar.today());
+
+  /* ---------- スワイプ ---------- */
+  const hammer = new Hammer(document.getElementById('calendar-wrapper'));
+  hammer.on('swipeleft', () =>
+    animateMove('next', () => calendar.next())
+  );
+  hammer.on('swiperight', () =>
+    animateMove('prev', () => calendar.prev())
+  );
+
+  /* ---------- RSS ---------- */
   const feeds = [
     { id: 'mumeino', prefix: '📝' },
     { id: 'info', prefix: '📢' }
@@ -83,6 +164,7 @@ $(function () {
     });
   });
 
+  /* ---------- 記事クリック ---------- */
   calendar.on('clickEvent', function (e) {
     const link = e.event.raw.link;
     if (link) {
