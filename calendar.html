@@ -22,7 +22,6 @@
       overflow: hidden;
     }
 
-    /* ヘッダー部分 */
     .calendar-header {
       padding: 1rem;
       border-bottom: 1px solid #ddd;
@@ -32,9 +31,8 @@
       margin-top: 0.5rem;
     }
 
-    /* カレンダー全画面表示 */
     #calendar-wrapper {
-      height: calc(100vh - 110px); /* ヘッダー分を引く */
+      height: calc(100vh - 110px);
       overflow: hidden;
     }
 
@@ -43,7 +41,6 @@
       transition: opacity 0.25s ease, transform 0.25s ease;
     }
 
-    /* 月移動アニメーション */
     .fade-out-left {
       opacity: 0;
       transform: translateX(-30px);
@@ -82,6 +79,24 @@
   <div id="calendar"></div>
 </div>
 
+<!-- モーダル -->
+<div id="noteModal" class="modal">
+  <div class="modal-background"></div>
+  <div class="modal-card">
+    <header class="modal-card-head">
+      <p class="modal-card-title" id="modalTitle"></p>
+      <button class="delete" aria-label="close"></button>
+    </header>
+    <section class="modal-card-body">
+      <p class="has-text-grey is-size-7" id="modalDate"></p>
+      <hr>
+      <a id="modalLink" href="#" target="_blank" class="button is-link is-small">
+        noteで記事を開く
+      </a>
+    </section>
+  </div>
+</div>
+
 <!-- jQuery -->
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 
@@ -108,7 +123,7 @@ $(function () {
     useCreationPopup: false
   });
 
-  /* ---------- 月移動アニメ ---------- */
+  /* --------- 月移動アニメ --------- */
   function animateMove(direction, action) {
     const outClass = direction === 'next'
       ? 'fade-out-left'
@@ -126,18 +141,14 @@ $(function () {
     }, 250);
   }
 
-  /* ---------- ボタン ---------- */
   $('#prevMonth').on('click', () =>
     animateMove('prev', () => calendar.prev())
   );
-
   $('#nextMonth').on('click', () =>
     animateMove('next', () => calendar.next())
   );
-
   $('#today').on('click', () => calendar.today());
 
-  /* ---------- スワイプ ---------- */
   const hammer = new Hammer(document.getElementById('calendar-wrapper'));
   hammer.on('swipeleft', () =>
     animateMove('next', () => calendar.next())
@@ -146,7 +157,7 @@ $(function () {
     animateMove('prev', () => calendar.prev())
   );
 
-  /* ---------- RSS ---------- */
+  /* --------- RSS --------- */
   const feeds = [
     { id: 'mumeino', prefix: '📝' },
     { id: 'info', prefix: '📢' }
@@ -169,18 +180,32 @@ $(function () {
           start: date,
           end: date,
           isReadOnly: true,
-          raw: { link }
+          raw: {
+            title: title,
+            link: link,
+            date: date
+          }
         }]);
       });
     });
   });
 
-  /* ---------- 記事クリック ---------- */
+  /* --------- モーダル表示 --------- */
   calendar.on('clickEvent', function (e) {
-    const link = e.event.raw.link;
-    if (link) {
-      window.open(link, '_blank');
-    }
+    const event = e.event;
+
+    $('#modalTitle').text(event.raw.title);
+    $('#modalDate').text(
+      dayjs(event.raw.date).format('YYYY年MM月DD日 HH:mm')
+    );
+    $('#modalLink').attr('href', event.raw.link);
+
+    $('#noteModal').addClass('is-active');
+  });
+
+  /* --------- モーダル閉じる --------- */
+  $('.modal-background, .modal .delete').on('click', function () {
+    $('#noteModal').removeClass('is-active');
   });
 
 });
