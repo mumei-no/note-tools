@@ -13,21 +13,33 @@
         href="https://uicdn.toast.com/calendar/latest/toastui-calendar.min.css">
 
   <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+    }
+
     body {
-      padding: 1.5rem;
+      overflow: hidden;
+    }
+
+    /* ヘッダー部分 */
+    .calendar-header {
+      padding: 1rem;
+      border-bottom: 1px solid #ddd;
     }
 
     .calendar-controls {
-      margin-bottom: 1rem;
+      margin-top: 0.5rem;
     }
 
+    /* カレンダー全画面表示 */
     #calendar-wrapper {
-      position: relative;
+      height: calc(100vh - 110px); /* ヘッダー分を引く */
       overflow: hidden;
     }
 
     #calendar {
-      height: 800px;
+      height: 100%;
       transition: opacity 0.25s ease, transform 0.25s ease;
     }
 
@@ -50,55 +62,36 @@
     .note-title {
       margin-left: 0.3em;
     }
-
-    /* ===============================
-       記事タイトルを複数行表示
-       =============================== */
-
-    .toastui-calendar-weekday-event,
-    .toastui-calendar-weekday-event-content,
-    .toastui-calendar-event-title {
-      white-space: normal !important;
-    }
-
-    .toastui-calendar-event-title {
-      overflow: visible !important;
-      text-overflow: clip !important;
-      line-height: 1.35;
-    }
   </style>
 </head>
 <body>
 
-<section class="section">
-  <div class="container">
+<!-- ヘッダー -->
+<div class="calendar-header">
+  <h1 class="title is-4">note 投稿カレンダー</h1>
 
-    <h1 class="title is-4">note 投稿カレンダー</h1>
-
-    <!-- 月移動ボタン -->
-    <div class="buttons calendar-controls">
-      <button id="prevMonth" class="button is-small">◀ 前月</button>
-      <button id="today" class="button is-small">今月</button>
-      <button id="nextMonth" class="button is-small">次月 ▶</button>
-    </div>
-
-    <div id="calendar-wrapper">
-      <div id="calendar"></div>
-    </div>
-
+  <div class="buttons calendar-controls">
+    <button id="prevMonth" class="button is-small">◀ 前月</button>
+    <button id="today" class="button is-small">今月</button>
+    <button id="nextMonth" class="button is-small">次月 ▶</button>
   </div>
-</section>
+</div>
+
+<!-- カレンダー -->
+<div id="calendar-wrapper">
+  <div id="calendar"></div>
+</div>
 
 <!-- jQuery -->
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 
-<!-- dayjs（必須） -->
+<!-- dayjs -->
 <script src="https://cdn.jsdelivr.net/npm/dayjs@1/dayjs.min.js"></script>
 
 <!-- TUI Calendar -->
 <script src="https://uicdn.toast.com/calendar/latest/toastui-calendar.min.js"></script>
 
-<!-- Hammer.js（スワイプ） -->
+<!-- Hammer.js -->
 <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
 
 <script>
@@ -115,7 +108,7 @@ $(function () {
     useCreationPopup: false
   });
 
-  /* --------- 月移動アニメーション --------- */
+  /* ---------- 月移動アニメ ---------- */
   function animateMove(direction, action) {
     const outClass = direction === 'next'
       ? 'fade-out-left'
@@ -133,7 +126,7 @@ $(function () {
     }, 250);
   }
 
-  /* --------- ボタン操作 --------- */
+  /* ---------- ボタン ---------- */
   $('#prevMonth').on('click', () =>
     animateMove('prev', () => calendar.prev())
   );
@@ -144,7 +137,7 @@ $(function () {
 
   $('#today').on('click', () => calendar.today());
 
-  /* --------- スワイプ操作 --------- */
+  /* ---------- スワイプ ---------- */
   const hammer = new Hammer(document.getElementById('calendar-wrapper'));
   hammer.on('swipeleft', () =>
     animateMove('next', () => calendar.next())
@@ -153,7 +146,7 @@ $(function () {
     animateMove('prev', () => calendar.prev())
   );
 
-  /* --------- RSS取得 --------- */
+  /* ---------- RSS ---------- */
   const feeds = [
     { id: 'mumeino', prefix: '📝' },
     { id: 'info', prefix: '📢' }
@@ -182,7 +175,7 @@ $(function () {
     });
   });
 
-  /* --------- 記事クリック --------- */
+  /* ---------- 記事クリック ---------- */
   calendar.on('clickEvent', function (e) {
     const link = e.event.raw.link;
     if (link) {
