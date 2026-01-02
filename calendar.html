@@ -2,6 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>note 投稿カレンダー</title>
 
   <!-- Bulma -->
@@ -59,6 +60,32 @@
     .note-title {
       margin-left: 0.3em;
     }
+
+    /* モーダル高速化のための改善 */
+    .modal {
+      transition: opacity 0.15s ease;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .modal.is-active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-background {
+      transition: opacity 0.15s ease;
+    }
+
+    .modal-card {
+      transition: transform 0.15s ease;
+      transform: scale(0.95);
+      will-change: transform;
+    }
+
+    .modal.is-active .modal-card {
+      transform: scale(1);
+    }
   </style>
 </head>
 <body>
@@ -114,6 +141,7 @@ $(function () {
 
   const Calendar = tui.Calendar;
   const $calendarEl = $('#calendar');
+  const $modal = $('#noteModal');
 
   const calendar = new Calendar('#calendar', {
     defaultView: 'month',
@@ -190,22 +218,26 @@ $(function () {
     });
   });
 
-  /* --------- モーダル表示 --------- */
+  /* --------- モーダル表示（高速化版） --------- */
   calendar.on('clickEvent', function (e) {
     const event = e.event;
 
+    // データを先に設定
     $('#modalTitle').text(event.raw.title);
     $('#modalDate').text(
       dayjs(event.raw.date).format('YYYY年MM月DD日 HH:mm')
     );
     $('#modalLink').attr('href', event.raw.link);
 
-    $('#noteModal').addClass('is-active');
+    // 次のフレームで表示（再描画を最適化）
+    requestAnimationFrame(() => {
+      $modal.addClass('is-active');
+    });
   });
 
   /* --------- モーダル閉じる --------- */
   $('.modal-background, .modal .delete').on('click', function () {
-    $('#noteModal').removeClass('is-active');
+    $modal.removeClass('is-active');
   });
 
 });
