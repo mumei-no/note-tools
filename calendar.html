@@ -50,7 +50,11 @@ html, body {
   text-decoration: underline;
 }
 
-/* モーダル高速表示（アニメーション最小） */
+.swipe-area {
+  flex: 1;
+  touch-action: pan-y;
+}
+
 .modal-card {
   max-height: 80vh;
 }
@@ -58,12 +62,6 @@ html, body {
 .modal-card-body {
   overflow-y: auto;
   white-space: pre-wrap;
-}
-
-/* スワイプ用 */
-.swipe-area {
-  flex: 1;
-  touch-action: pan-y;
 }
 </style>
 </head>
@@ -101,34 +99,44 @@ html, body {
 
 <script>
 /* ========= 設定 ========= */
-const USERS = [
+const FEEDS = [
   { id: "mumeino", official: false },
   { id: "info", official: true }
 ];
 
-/* ========= 状態 ========= */
 let current = new Date();
 let articles = [];
 
-/* ========= ダミーデータ（ここをrss2jsonで差し替え） ========= */
-articles = [
-  {
-    title: "長いタイトルの記事でも省略されずに表示されます。これはテスト用のとても長いタイトルです。",
-    content: "これは本文全文です。\n\nモーダルは即時表示されます。",
-    date: "2026-01-10",
-    url: "https://note.com/",
-    official: false
-  },
-  {
-    title: "note公式からのお知らせ",
-    content: "公式記事の全文です。",
-    date: "2026-01-15",
-    url: "https://note.com/info",
-    official: true
-  }
-];
+/* ========= RSS取得 ========= */
+async function loadRSS() {
+  articles = [];
 
-/* ========= 描画 ========= */
+  for (const feed of FEEDS) {
+    const rss = `https://note.com/${feed.id}/rss`;
+    const api = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rss)}`;
+
+    try {
+      const res = await fetch(api);
+      const json = await res.json();
+
+      json.items.forEach(item => {
+        articles.push({
+          title: item.title,
+          content: item.contentSnippet || item.content || "",
+          date: item.pubDate.slice(0, 10), // UTCのまま
+          url: item.link,
+          official: feed.official
+        });
+      });
+    } catch (e) {
+      console.error("RSS取得失敗:", feed.id);
+    }
+  }
+
+  renderCalendar();
+}
+
+/* ========= カレンダー描画 ========= */
 function renderCalendar() {
   const cal = document.getElementById("calendar");
   cal.innerHTML = "";
@@ -214,8 +222,8 @@ swipe.addEventListener("touchend", e => {
   renderCalendar();
 });
 
-/* ========= 初期描画 ========= */
-renderCalendar();
+/* ========= 初期化 ========= */
+loadRSS();
 </script>
 </body>
 </html>
