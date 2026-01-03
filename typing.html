@@ -2,154 +2,28 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-
-<!-- ページタイトル -->
-<title>日本語タイピングゲーム</title>
-
-<style>
-/* 画面全体の基本スタイル */
-body {
-  font-family: system-ui, sans-serif;
-  padding: 20px;
-}
-
-/* 表示する日本語文章 */
-#jp {
-  font-size: 22px;
-  line-height: 1.6;
-}
-
-/* 入力欄（ローマ字） */
-#input {
-  width: 100%;
-  font-size: 20px;
-  margin-top: 20px;
-}
-
-/* 状態表示（辞書読み込み中など） */
-#status {
-  color: gray;
-  margin-bottom: 10px;
-}
-</style>
+<title>kuromoji test</title>
 </head>
 <body>
 
-<h1>日本語タイピング</h1>
-
-<!-- 処理状態を表示 -->
 <div id="status">辞書読み込み中…</div>
 
-<!-- タイピング対象の日本語文（漢字・句読点そのまま） -->
-<div id="jp"></div>
-
-<!-- ユーザーのローマ字入力 -->
-<input id="input" disabled placeholder="ローマ字で入力してください">
-
-<!--
-  kuromoji.js
-  ・日本語形態素解析ライブラリ
-  ・漢字 → 読み（カタカナ）を取得するために使用
--->
 <script src="https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/build/kuromoji.js"></script>
 
-<!--
-  wanakana
-  ・かな ↔ ローマ字変換ライブラリ
-  ・読み（かな）をローマ字に変換するために使用
--->
-<script src="https://cdn.jsdelivr.net/npm/wanakana@5.3.1/wanakana.min.js"></script>
-
 <script>
-/*
-  タイピングに使う日本語文章
-  ※ 漢字・句読点はそのまま表示する
-*/
-const text = "漢字を含む文章です。句読点も、そのまま表示します。";
-
-/* DOM要素取得 */
 const statusEl = document.getElementById("status");
-const jpEl = document.getElementById("jp");
-const inputEl = document.getElementById("input");
 
-/* 日本語文章を画面に表示 */
-jpEl.textContent = text;
-
-/*
-  kuromoji 初期化
-  dicPath は GitHub Pages にアップロードした辞書フォルダ
-*/
 kuromoji.builder({
-  dicPath: "./dict/"
+  dicPath: "https://mumei-no.github.io/note-tools/dict/"
 }).build((err, tokenizer) => {
-
-  /* 辞書ロード失敗時 */
   if (err) {
-    statusEl.textContent = "辞書ロード失敗: " + err;
+    statusEl.textContent = "❌ 失敗: " + err;
+    console.error(err);
     return;
   }
-
-  /* 準備完了 */
-  statusEl.textContent = "準備完了";
-  inputEl.disabled = false;
-
-  /*
-    日本語 → ローマ字 に変換
-    1. kuromoji で漢字の読みを取得
-    2. wanakana でローマ字化
-  */
-  const romaji = toRomaji(tokenizer, text);
-
-  /*
-    入力イベント
-    ・正しい途中入力 → 緑
-    ・間違い → 赤
-  */
-  inputEl.addEventListener("input", () => {
-    const value = inputEl.value;
-
-    if (romaji.startsWith(value)) {
-      inputEl.style.color = "green";
-
-      /* 全部打ち切ったらクリア */
-      if (value === romaji) {
-        statusEl.textContent = "クリア！";
-      }
-    } else {
-      inputEl.style.color = "red";
-    }
-  });
+  statusEl.textContent = "✅ 辞書ロード成功";
+  console.log(tokenizer);
 });
-
-/*
-  日本語（漢字含む）→ ローマ字変換関数
-*/
-function toRomaji(tokenizer, str) {
-
-  /*
-    tokenizer.tokenize()
-    → 文章を単語単位に分解
-  */
-  const tokens = tokenizer.tokenize(str);
-
-  /*
-    各トークンの読みを結合
-    ・reading があれば（漢字）それを使う
-    ・なければ（記号など）表層文字を使う
-  */
-  const kana = tokens.map(token => {
-    return token.reading
-      ? token.reading
-      : token.surface_form;
-  }).join("");
-
-  /*
-    カタカナ → ひらがな → ローマ字
-  */
-  return wanakana.toRomaji(
-    wanakana.toHiragana(kana)
-  );
-}
 </script>
 
 </body>
