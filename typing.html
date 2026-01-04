@@ -16,6 +16,7 @@ body {
 #roma {
   color: #666;
   margin-bottom: 12px;
+  word-break: break-all;
 }
 #input {
   font-size: 20px;
@@ -44,14 +45,14 @@ body {
 <script src="./kuromoji.js"></script>
 
 <script>
-/* =============================
+/* ======================================
    1. 出題テキスト（仮）
-   ============================= */
+   ====================================== */
 const text = "今日はいい天気ですね。";
 
-/* =============================
+/* ======================================
    2. kuromoji 初期化
-   ============================= */
+   ====================================== */
 kuromoji.builder({ dicPath: "./dict" }).build((err, tokenizer) => {
   if (err) {
     document.getElementById("jp").textContent = "辞書読み込み失敗";
@@ -67,18 +68,18 @@ kuromoji.builder({ dicPath: "./dict" }).build((err, tokenizer) => {
     .map(t => t.reading || t.surface_form)
     .join("");
 
-  // カタカナ → ひらがな
-  const hira = wanakana.toHiragana(reading);
+  // カタカナ → ひらがな（完全正規化）
+  const hira = wanakana.toHiragana(reading, { passRomaji: true });
 
-  // ひらがな → ローマ字
-  const roma = wanakana.toRomaji(hira);
+  // ひらがな → ローマ字（IMEモード無効で拗音崩れ防止）
+  const roma = wanakana.toRomaji(hira, { IMEMode: false });
 
   startGame(text, roma);
 });
 
-/* =============================
+/* ======================================
    3. タイピングゲーム本体
-   ============================= */
+   ====================================== */
 function startGame(jpText, romaText) {
   const jp = document.getElementById("jp");
   const roma = document.getElementById("roma");
