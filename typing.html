@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8" />
-<title>Japanese Typing Game</title>
+<title>note Typing Game</title>
 
 <style>
 body {
@@ -10,82 +10,160 @@ body {
   padding: 20px;
 }
 #jp {
-  font-size: 24px;
+  font-size: 22px;
   margin-bottom: 8px;
 }
 #roma {
-  color: #666;
-  margin-bottom: 12px;
+  font-size: 16px;
   word-break: break-all;
 }
+.correct {
+  color: #2ecc71;
+}
+.current {
+  text-decoration: underline;
+}
 #input {
-  font-size: 20px;
+  margin-top: 10px;
+  font-size: 18px;
   width: 100%;
 }
 #status {
-  margin-top: 10px;
+  margin-top: 8px;
   font-weight: bold;
 }
 </style>
 </head>
 <body>
 
-<h1>日本語タイピング</h1>
+<h1>note タイピング</h1>
 
-<div id="jp">辞書読み込み中…</div>
+<div id="jp">読み込み中…</div>
 <div id="roma"></div>
 
 <input id="input" autocomplete="off" />
 <div id="status"></div>
 
-<!-- ✅ wanakana -->
+<!-- wanakana（安定版） -->
 <script src="https://unpkg.com/wanakana@5.3.1/wanakana.min.js"></script>
 
 <!-- kuromoji（ローカル） -->
 <script src="./kuromoji.js"></script>
 
 <script>
-const text = "今日はいい天気ですね。";
+/* ===============================
+   設定
+================================ */
+const RSS_URL =
+  "https://api.rss2json.com/v1/api.json?rss_url=https://note.com/info/rss";
 
-kuromoji.builder({ dicPath: "./dict" }).build((err, tokenizer) => {
-  if (err) {
-    document.getElementById("jp").textContent = "辞書読み込み失敗";
-    console.error(err);
-    return;
-  }
+/* ===============================
+   ユーティリティ
+================================ */
+// HTMLタグ除去
+function stripHtml(html) {
+  const div = document.createElement("div");
+  div.innerHTML = html;
+  return div.textContent || "";
+}
 
-  const tokens = tokenizer.tokenize(text);
+// 文分割（簡易）
+function splitSentences(text) {
+  return text
+    .replace(/\n+/g, "")
+    .split(/。/)
+    .map(s => s.trim())
+    .filter(Boolean)
+    .map(s => s + "。");
+}
 
-  const reading = tokens
-    .map(t => t.reading || t.surface_form)
+/* ===============================
+   note RSS 読み込み
+================================ */
+async function loadNoteText() {
+  const res = await fetch(RSS_URL);
+  const json = await res.json();
+
+  const body = json.items
+    .map(item => stripHtml(item.content))
     .join("");
 
-  const hira = wanakana.toHiragana(reading, { passRomaji: true });
-  const roma = wanakana.toRomaji(hira, { IMEMode: false });
+  return splitSentences(body);
+}
 
-  startGame(text, roma);
-});
+/* ===============================
+   ゲーム開始
+================================ */
+(async function () {
+  const sentences = await loadNoteText();
+  let index = 0;
 
-function startGame(jpText, romaText) {
-  const jp = document.getElementById("jp");
-  const roma = document.getElementById("roma");
-  const input = document.getElementById("input");
-  const status = document.getElementById("status");
+  kuromoji.builder({ dicPath: "./dict" }).build((err, tokenizer) => {
+    if (err) {
+      document.getElementById("jp").textContent = "辞書読み込み失敗";
+      return;
+    }
+    nextSentence();
 
-  jp.textContent = jpText;
-  roma.textContent = romaText;
-  input.focus();
+    function nextSentence() {
+      if (index >= sentences.length) {
+        document.getElementById("jp").textContent = "🎉 全文クリア！";
+        return;
+      }
 
-  input.addEventListener("input", () => {
-    const val = input.value;
-    if (romaText.startsWith(val)) {
-      status.textContent = val === romaText ? "🎉 クリア！" : "OK";
-      if (val === romaText) input.disabled = true;
-    } else {
-      status.textContent = "❌ ミス";
+      const jpText = sentences[index++];
+      startGame(jpText, tokenizer);
+    }
+
+    function startGame(jpText, tokenizer) {
+      const jp = document.getElementById("jp");
+      const romaDiv = document.getElementById("roma");
+      const input = document.getElementById("input");
+      const status = document.getElementById("status");
+
+      jp.textContent = jpText;
+      input.value = "";
+      input.disabled = false;
+      input.focus();
+
+      const tokens = tokenizer.tokenize(jpText);
+      const reading = tokens.map(t => t.reading || t.surface_form).join("");
+      const hira = wanakana.toHiragana(reading, { passRomaji: true });
+      const roma = wanakana.toRomaji(hira, { IMEMode: false });
+
+      renderRoma("");
+
+      input.oninput = () => {
+        const val = input.value;
+
+        if (!roma.startsWith(val)) {
+          status.textContent = "❌ ミス";
+          return;
+        }
+
+        status.textContent = "OK";
+        renderRoma(val);
+
+        if (val === roma) {
+          status.textContent = "✔ 次へ";
+          input.disabled = true;
+          setTimeout(nextSentence, 600);
+        }
+      };
+
+      function renderRoma(typed) {
+        const correct = roma.slice(0, typed.length);
+        const rest = roma.slice(typed.length);
+
+        romaDiv.innerHTML =
+          `<span class="correct">${correct}</span>` +
+          (rest
+            ? `<span class="current">${rest[0]}</span>${rest.slice(1)}`
+            : "");
+      }
     }
   });
-}
+})();
 </script>
 
 </body>
