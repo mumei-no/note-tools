@@ -1,169 +1,188 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8" />
-<title>note Typing Game</title>
+<meta charset="UTF-8">
+<title>note タイピングゲーム</title>
+
+<!-- kuromoji -->
+<script src="https://unpkg.com/kuromoji@0.1.2/dist/kuromoji.js"></script>
+
+<!-- wanakana（確実に動くCDN） -->
+<script src="https://unpkg.com/wanakana@5.3.1/wanakana.min.js"></script>
 
 <style>
 body {
-  font-family: system-ui, sans-serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   padding: 20px;
+  line-height: 1.8;
 }
-#jp {
-  font-size: 22px;
-  margin-bottom: 8px;
+
+#jp span.done {
+  color: #4caf50;
 }
-#roma {
-  font-size: 16px;
-  word-break: break-all;
+
+#jp span.todo {
+  color: #000;
 }
-.correct {
-  color: #2ecc71;
-}
-.current {
-  text-decoration: underline;
-}
-#input {
+
+#romaji {
   margin-top: 10px;
-  font-size: 18px;
-  width: 100%;
+  font-size: 14px;
+  color: #666;
 }
+
 #status {
-  margin-top: 8px;
-  font-weight: bold;
+  margin-top: 10px;
 }
 </style>
 </head>
 <body>
 
-<h1>note タイピング</h1>
+<h2>note タイピングゲーム</h2>
 
-<div id="jp">読み込み中…</div>
-<div id="roma"></div>
-
-<input id="input" autocomplete="off" />
-<div id="status"></div>
-
-<!-- wanakana（安定版） -->
-<script src="https://unpkg.com/wanakana@5.3.1/wanakana.min.js"></script>
-
-<!-- kuromoji（ローカル） -->
-<script src="./kuromoji.js"></script>
+<div id="jp"></div>
+<div id="romaji"></div>
+<div id="status">読み込み中…</div>
 
 <script>
-/* ===============================
-   設定
-================================ */
+/*
+  ============================
+  設定
+  ============================
+*/
+
+// note info RSS（ユーザー名を info にする）
 const RSS_URL =
   "https://api.rss2json.com/v1/api.json?rss_url=https://note.com/info/rss";
 
-/* ===============================
-   ユーティリティ
-================================ */
-// HTMLタグ除去
-function stripHtml(html) {
-  const div = document.createElement("div");
-  div.innerHTML = html;
-  return div.textContent || "";
-}
+// kuromoji 辞書パス（GitHub Pages 用）
+const DICT_PATH = "dict";
 
-// 文分割（簡易）
-function splitSentences(text) {
-  return text
-    .replace(/\n+/g, "")
-    .split(/。/)
-    .map(s => s.trim())
-    .filter(Boolean)
-    .map(s => s + "。");
-}
+/*
+  ============================
+  状態管理
+  ============================
+*/
 
-/* ===============================
-   note RSS 読み込み
-================================ */
-async function loadNoteText() {
-  const res = await fetch(RSS_URL);
-  const json = await res.json();
+let sentences = [];     // 出題文配列
+let currentSentence = "";
+let kana = "";
+let romaji = "";
+let input = "";
+let index = 0;
 
-  const body = json.items
-    .map(item => stripHtml(item.content))
-    .join("");
+/*
+  ============================
+  初期処理
+  ============================
+*/
 
-  return splitSentences(body);
-}
+fetch(RSS_URL)
+  .then(res => res.json())
+  .then(data => {
+    // 本文をまとめて取得
+    const text = data.items
+      .map(item => item.content)
+      .join("\n")
+      .replace(/<[^>]+>/g, "")   // HTML除去
+      .replace(/[a-zA-Z0-9]/g, ""); // 英数字除去
 
-/* ===============================
-   ゲーム開始
-================================ */
-(async function () {
-  const sentences = await loadNoteText();
-  let index = 0;
+    // 改行 ＋ 句点で分割
+    sentences = text
+      .split(/[\n。]/)
+      .map(s => s.trim())
+      .filter(s => s.length > 0)
+      .map(s => s + "。"); // 表示用に句点を戻す
 
-  kuromoji.builder({ dicPath: "./dict" }).build((err, tokenizer) => {
+    initKuromoji();
+  });
+
+function initKuromoji() {
+  kuromoji.builder({ dicPath: DICT_PATH }).build((err, tokenizer) => {
     if (err) {
-      document.getElementById("jp").textContent = "辞書読み込み失敗";
+      document.getElementById("status").textContent = "辞書読み込み失敗";
       return;
     }
+    window.tokenizer = tokenizer;
     nextSentence();
-
-    function nextSentence() {
-      if (index >= sentences.length) {
-        document.getElementById("jp").textContent = "🎉 全文クリア！";
-        return;
-      }
-
-      const jpText = sentences[index++];
-      startGame(jpText, tokenizer);
-    }
-
-    function startGame(jpText, tokenizer) {
-      const jp = document.getElementById("jp");
-      const romaDiv = document.getElementById("roma");
-      const input = document.getElementById("input");
-      const status = document.getElementById("status");
-
-      jp.textContent = jpText;
-      input.value = "";
-      input.disabled = false;
-      input.focus();
-
-      const tokens = tokenizer.tokenize(jpText);
-      const reading = tokens.map(t => t.reading || t.surface_form).join("");
-      const hira = wanakana.toHiragana(reading, { passRomaji: true });
-      const roma = wanakana.toRomaji(hira, { IMEMode: false });
-
-      renderRoma("");
-
-      input.oninput = () => {
-        const val = input.value;
-
-        if (!roma.startsWith(val)) {
-          status.textContent = "❌ ミス";
-          return;
-        }
-
-        status.textContent = "OK";
-        renderRoma(val);
-
-        if (val === roma) {
-          status.textContent = "✔ 次へ";
-          input.disabled = true;
-          setTimeout(nextSentence, 600);
-        }
-      };
-
-      function renderRoma(typed) {
-        const correct = roma.slice(0, typed.length);
-        const rest = roma.slice(typed.length);
-
-        romaDiv.innerHTML =
-          `<span class="correct">${correct}</span>` +
-          (rest
-            ? `<span class="current">${rest[0]}</span>${rest.slice(1)}`
-            : "");
-      }
-    }
   });
-})();
+}
+
+/*
+  ============================
+  1文出題
+  ============================
+*/
+
+function nextSentence() {
+  index = 0;
+  input = "";
+  currentSentence = sentences.shift();
+  if (!currentSentence) {
+    document.getElementById("status").textContent = "終了！";
+    return;
+  }
+
+  // 形態素解析 → 読み取得
+  const tokens = tokenizer.tokenize(currentSentence);
+  kana = tokens.map(t => t.reading || t.surface_form).join("");
+  romaji = wanakana.toRomaji(kana);
+
+  render();
+  document.getElementById("status").textContent = "入力してください";
+}
+
+/*
+  ============================
+  表示
+  ============================
+*/
+
+function render() {
+  const jpDiv = document.getElementById("jp");
+  jpDiv.innerHTML = "";
+
+  for (let i = 0; i < currentSentence.length; i++) {
+    const span = document.createElement("span");
+    span.textContent = currentSentence[i];
+    span.className = i < index ? "done" : "todo";
+    jpDiv.appendChild(span);
+  }
+
+  document.getElementById("romaji").textContent =
+    romaji.slice(input.length);
+}
+
+/*
+  ============================
+  キー入力
+  ============================
+*/
+
+document.addEventListener("keydown", e => {
+  if (!romaji) return;
+
+  const key = e.key.toLowerCase();
+  if (romaji[input.length] === key) {
+    input += key;
+
+    // 日本語文字位置更新（ざっくり対応）
+    if (input.length >= wanakana.toRomaji(
+        wanakana.toHiragana(
+          currentSentence.slice(0, index + 1)
+        )
+      ).length) {
+      index++;
+    }
+
+    if (input === romaji) {
+      nextSentence();
+      return;
+    }
+
+    render();
+  }
+});
 </script>
 
 </body>
