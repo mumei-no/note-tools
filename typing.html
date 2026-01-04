@@ -1,23 +1,131 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <title>Typing</title>
+<meta charset="UTF-8" />
+<title>Japanese Typing Game</title>
+
+<style>
+body {
+  font-family: system-ui, sans-serif;
+  padding: 20px;
+}
+#jp {
+  font-size: 24px;
+  margin-bottom: 10px;
+}
+#roma {
+  color: #666;
+  margin-bottom: 10px;
+}
+#input {
+  font-size: 20px;
+}
+#status {
+  margin-top: 10px;
+}
+</style>
 </head>
 <body>
 
+<h1>日本語タイピング</h1>
+
+<div id="jp">読み込み中…</div>
+<div id="roma"></div>
+
+<input id="input" autocomplete="off" />
+<div id="status"></div>
+
 <script src="./kuromoji.js"></script>
 <script>
-  console.log("kuromoji:", typeof kuromoji);
+/* =============================
+   1. テキスト（仮）
+   ============================= */
+const text = "今日はいい天気ですね。";
 
-  kuromoji.builder({ dicPath: "./dict" }).build(function (err, tokenizer) {
-    if (err) {
-      console.error("kuromoji error:", err);
-      return;
+/* =============================
+   2. カタカナ→ひらがな
+   ============================= */
+function kataToHira(str) {
+  return str.replace(/[\u30a1-\u30f6]/g, ch =>
+    String.fromCharCode(ch.charCodeAt(0) - 0x60)
+  );
+}
+
+/* =============================
+   3. ひらがな→ローマ字（最小）
+   ============================= */
+const romaTable = {
+  あ:"a", い:"i", う:"u", え:"e", お:"o",
+  か:"ka", き:"ki", く:"ku", け:"ke", こ:"ko",
+  さ:"sa", し:"shi", す:"su", せ:"se", そ:"so",
+  た:"ta", ち:"chi", つ:"tsu", て:"te", と:"to",
+  な:"na", に:"ni", ぬ:"nu", ね:"ne", の:"no",
+  は:"ha", ひ:"hi", ふ:"fu", へ:"he", ほ:"ho",
+  ま:"ma", み:"mi", む:"mu", め:"me", も:"mo",
+  や:"ya", ゆ:"yu", よ:"yo",
+  ら:"ra", り:"ri", る:"ru", れ:"re", ろ:"ro",
+  わ:"wa", を:"o", ん:"n",
+  ー:"-", "。":".", "、":","
+};
+
+function hiraToRoma(str) {
+  return [...str].map(c => romaTable[c] ?? c).join("");
+}
+
+/* =============================
+   4. kuromoji 初期化
+   ============================= */
+kuromoji.builder({ dicPath: "./dict" }).build((err, tokenizer) => {
+  if (err) {
+    document.getElementById("jp").textContent = "辞書読み込み失敗";
+    console.error(err);
+    return;
+  }
+
+  // 形態素解析
+  const tokens = tokenizer.tokenize(text);
+
+  // 読みを連結
+  const reading = tokens
+    .map(t => t.reading || t.surface_form)
+    .join("");
+
+  const hira = kataToHira(reading);
+  const roma = hiraToRoma(hira);
+
+  startGame(text, roma);
+});
+
+/* =============================
+   5. ゲーム本体
+   ============================= */
+function startGame(jpText, romaText) {
+  const jp = document.getElementById("jp");
+  const roma = document.getElementById("roma");
+  const input = document.getElementById("input");
+  const status = document.getElementById("status");
+
+  let index = 0;
+
+  jp.textContent = jpText;
+  roma.textContent = romaText;
+
+  input.focus();
+
+  input.addEventListener("input", () => {
+    const val = input.value;
+
+    if (romaText.startsWith(val)) {
+      status.textContent = "OK";
+      if (val === romaText) {
+        status.textContent = "🎉 クリア！";
+        input.disabled = true;
+      }
+    } else {
+      status.textContent = "❌ ミス";
     }
-    console.log("辞書読み込み完了");
-    console.log(tokenizer.tokenize("今日はいい天気です"));
   });
+}
 </script>
 
 </body>
