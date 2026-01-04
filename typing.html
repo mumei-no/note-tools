@@ -11,17 +11,19 @@ body {
 }
 #jp {
   font-size: 24px;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 #roma {
   color: #666;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 #input {
   font-size: 20px;
+  width: 100%;
 }
 #status {
   margin-top: 10px;
+  font-weight: bold;
 }
 </style>
 </head>
@@ -29,51 +31,26 @@ body {
 
 <h1>日本語タイピング</h1>
 
-<div id="jp">読み込み中…</div>
+<div id="jp">辞書読み込み中…</div>
 <div id="roma"></div>
 
 <input id="input" autocomplete="off" />
 <div id="status"></div>
 
+<!-- wanakana（CDN） -->
+<script src="https://unpkg.com/wanakana@5.3.1/umd/wanakana.min.js"></script>
+
+<!-- kuromoji（ローカル） -->
 <script src="./kuromoji.js"></script>
+
 <script>
 /* =============================
-   1. テキスト（仮）
+   1. 出題テキスト（仮）
    ============================= */
 const text = "今日はいい天気ですね。";
 
 /* =============================
-   2. カタカナ→ひらがな
-   ============================= */
-function kataToHira(str) {
-  return str.replace(/[\u30a1-\u30f6]/g, ch =>
-    String.fromCharCode(ch.charCodeAt(0) - 0x60)
-  );
-}
-
-/* =============================
-   3. ひらがな→ローマ字（最小）
-   ============================= */
-const romaTable = {
-  あ:"a", い:"i", う:"u", え:"e", お:"o",
-  か:"ka", き:"ki", く:"ku", け:"ke", こ:"ko",
-  さ:"sa", し:"shi", す:"su", せ:"se", そ:"so",
-  た:"ta", ち:"chi", つ:"tsu", て:"te", と:"to",
-  な:"na", に:"ni", ぬ:"nu", ね:"ne", の:"no",
-  は:"ha", ひ:"hi", ふ:"fu", へ:"he", ほ:"ho",
-  ま:"ma", み:"mi", む:"mu", め:"me", も:"mo",
-  や:"ya", ゆ:"yu", よ:"yo",
-  ら:"ra", り:"ri", る:"ru", れ:"re", ろ:"ro",
-  わ:"wa", を:"o", ん:"n",
-  ー:"-", "。":".", "、":","
-};
-
-function hiraToRoma(str) {
-  return [...str].map(c => romaTable[c] ?? c).join("");
-}
-
-/* =============================
-   4. kuromoji 初期化
+   2. kuromoji 初期化
    ============================= */
 kuromoji.builder({ dicPath: "./dict" }).build((err, tokenizer) => {
   if (err) {
@@ -85,27 +62,28 @@ kuromoji.builder({ dicPath: "./dict" }).build((err, tokenizer) => {
   // 形態素解析
   const tokens = tokenizer.tokenize(text);
 
-  // 読みを連結
+  // 読み（カタカナ）を連結
   const reading = tokens
     .map(t => t.reading || t.surface_form)
     .join("");
 
-  const hira = kataToHira(reading);
-  const roma = hiraToRoma(hira);
+  // カタカナ → ひらがな
+  const hira = wanakana.toHiragana(reading);
+
+  // ひらがな → ローマ字
+  const roma = wanakana.toRomaji(hira);
 
   startGame(text, roma);
 });
 
 /* =============================
-   5. ゲーム本体
+   3. タイピングゲーム本体
    ============================= */
 function startGame(jpText, romaText) {
   const jp = document.getElementById("jp");
   const roma = document.getElementById("roma");
   const input = document.getElementById("input");
   const status = document.getElementById("status");
-
-  let index = 0;
 
   jp.textContent = jpText;
   roma.textContent = romaText;
